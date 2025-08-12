@@ -68,7 +68,7 @@ public final class Nyris extends JavaPlugin implements Listener {
     private void giveMineItem(Player player) {
         ItemStack mineItem = new ItemStack(Material.DIAMOND_PICKAXE);
         ItemMeta meta = mineItem.getItemMeta();
-        meta.setDisplayName("§6Mina Personalizada");
+        meta.setDisplayName("§6§lMina Personalizada");
         meta.setLore(Arrays.asList(
             "§7Clique com botão direito para",
             "§7criar uma mina personalizada!",
@@ -89,7 +89,7 @@ public final class Nyris extends JavaPlugin implements Listener {
             return;
         }
         
-        if (item.getItemMeta().getDisplayName().equals("§6Mina Personalizada")) {
+        if (item.getItemMeta().getDisplayName().equals("§6§lMina Personalizada")) {
             event.setCancelled(true);
             
             if (event.getAction().toString().contains("RIGHT_CLICK")) {
@@ -107,13 +107,49 @@ public final class Nyris extends JavaPlugin implements Listener {
         Location eyeLocation = player.getEyeLocation();
         Vector direction = eyeLocation.getDirection();
         
-        for (int i = 0; i < 100; i++) {
+        for (int i = 2; i < 100; i++) {
             Location loc = eyeLocation.clone().add(direction.clone().multiply(i));
             if (loc.getBlock().getType() != Material.AIR) {
-                return loc;
+                Location safeLocation = loc.clone().add(0, -1, 0);
+                
+                if (isLocationSafe(player, safeLocation)) {
+                    return safeLocation;
+                }
             }
         }
         return null;
+    }
+
+    private boolean isLocationSafe(Player player, Location location) {
+        Location playerLocation = player.getLocation();
+        int side = config.getInt("mine.dimensions.side", 10);
+        int height = config.getInt("mine.dimensions.height", 5);
+        
+        double minDistance = 2.0;
+        
+        if (location.distance(playerLocation) < minDistance) {
+            return false;
+        }
+        
+        return !willMineCollideWithPlayer(player, location, side, height);
+    }
+
+    private boolean willMineCollideWithPlayer(Player player, Location mineLocation, int side, int height) {
+        Location playerLocation = player.getLocation();
+        
+        for (int x = 0; x < side; x++) {
+            for (int z = 0; z < side; z++) {
+                for (int y = 0; y < height; y++) {
+                    Location blockLocation = mineLocation.clone().add(x, y, z);
+                    
+                    if (blockLocation.distance(playerLocation) < 1.5) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        return false;
     }
 
     private void createMine(Player player, Location center) {
@@ -122,47 +158,44 @@ public final class Nyris extends JavaPlugin implements Listener {
             return;
         }
 
-        int width = config.getInt("mine.dimensions.width", 10);
-        int depth = config.getInt("mine.dimensions.depth", 10);
+        int side = config.getInt("mine.dimensions.side", 10);
         int height = config.getInt("mine.dimensions.height", 5);
         int activeTime = config.getInt("mine.duration.active_time", 3600);
         int warningTime = config.getInt("mine.duration.warning_time", 300);
         
         Location mineLocation = center.clone();
         
+        if (!isLocationSafe(player, mineLocation)) {
+            player.sendMessage("§cLocalização muito próxima! Mire mais longe.");
+            return;
+        }
+        
         List<Block> mineBlocks = new ArrayList<>();
         List<BlockData> originalBlocks = new ArrayList<>();
         
-        int halfWidth = width / 2;
-        int halfDepth = depth / 2;
-        
-        for (int x = -halfWidth; x <= halfWidth; x++) {
-            for (int z = -halfDepth; z <= halfDepth; z++) {
-                for (int y = 0; y <= height; y++) {
+        for (int x = 0; x < side; x++) {
+            for (int z = 0; z < side; z++) {
+                for (int y = 0; y < height; y++) {
                     Location loc = mineLocation.clone().add(x, y, z);
                     Block block = loc.getBlock();
                     
-                    if (block.getType() != Material.AIR) {
+                    if (block.getType() == Material.AIR) {
+                        List<Material> oreTypes = getOreTypes();
+                        Random random = new Random();
+                        Material oreType = oreTypes.get(random.nextInt(oreTypes.size()));
+                        
+                        block.setType(oreType);
                         mineBlocks.add(block);
-                        originalBlocks.add(new BlockData(loc, block.getBlockData()));
+                        originalBlocks.add(new BlockData(loc, Material.AIR.createBlockData()));
                     }
                 }
             }
         }
         
-        List<Material> oreTypes = getOreTypes();
-        Random random = new Random();
-        
-        for (Block block : mineBlocks) {
-            Material oreType = oreTypes.get(random.nextInt(oreTypes.size()));
-            block.setType(oreType);
-        }
-        
         MineData mineData = new MineData(
             player.getUniqueId(),
             mineLocation,
-            width,
-            depth,
+            side,
             height,
             originalBlocks,
             mineBlocks,
@@ -175,8 +208,41 @@ public final class Nyris extends JavaPlugin implements Listener {
         playEffects(mineLocation, "creation");
         
         player.sendMessage("§aMina criada com sucesso!");
+        player.sendMessage("§7Dimensões: " + side + " x " + side + " x " + height + " blocos (cubo perfeito)");
+        player.sendMessage("§7Duração: " + (activeTime / 60) + " minutos");
+        player.sendMessage("§7Localização: " + mineLocation.getBlockX() + ", " + 
+                         mineLocation.getBlockY() + ", " + mineLocation.getBlockZ());
+        player.sendMessage("§7Distância segura: " + String.format("%.1f", mineLocation.distance(player.getLocation())) + " blocos");
         
         scheduleMineExpiration(mineData, warningTime);
+    }
+
+    private List<Material> getOreTypes() {
+        List<String> oreNames = config.getStringList("mine.ore_types");
+        List<Material> oreTypes = new ArrayList<>();
+        
+        for (String oreName : oreNames) {
+            try {
+                Material material = Material.valueOf(oreName.toUpperCase());
+                oreTypes.add(material);
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("Material inválido na configuração: " + oreName);
+            }
+        }
+        
+        if (oreTypes.isEmpty()) {
+            oreTypes.addAll(Arrays.asList(
+                Material.COAL_ORE,
+                Material.IRON_ORE,
+                Material.GOLD_ORE,
+                Material.DIAMOND_ORE,
+                Material.EMERALD_ORE,
+                Material.LAPIS_ORE,
+                Material.REDSTONE_ORE
+            ));
+        }
+        
+        return oreTypes;
     }
 
     private void scheduleMineExpiration(MineData mine, int warningTime) {
@@ -235,34 +301,6 @@ public final class Nyris extends JavaPlugin implements Listener {
         }
     }
 
-    private List<Material> getOreTypes() {
-        List<String> oreNames = config.getStringList("mine.ore_types");
-        List<Material> oreTypes = new ArrayList<>();
-        
-        for (String oreName : oreNames) {
-            try {
-                Material material = Material.valueOf(oreName.toUpperCase());
-                oreTypes.add(material);
-            } catch (IllegalArgumentException e) {
-                getLogger().warning("Material inválido na configuração: " + oreName);
-            }
-        }
-        
-        if (oreTypes.isEmpty()) {
-            oreTypes.addAll(Arrays.asList(
-                Material.COAL_ORE,
-                Material.IRON_ORE,
-                Material.GOLD_ORE,
-                Material.DIAMOND_ORE,
-                Material.EMERALD_ORE,
-                Material.LAPIS_ORE,
-                Material.REDSTONE_ORE
-            ));
-        }
-        
-        return oreTypes;
-    }
-
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -303,15 +341,16 @@ public final class Nyris extends JavaPlugin implements Listener {
 
     private boolean isLocationInMine(Location location, MineData mine) {
         Location mineLoc = mine.getLocation();
-        int halfWidth = mine.getWidth() / 2;
-        int halfDepth = mine.getDepth() / 2;
+        int side = mine.getSide();
         int height = mine.getHeight();
         
         return location.getWorld().equals(mineLoc.getWorld()) &&
-               Math.abs(location.getBlockX() - mineLoc.getBlockX()) <= halfWidth &&
-               Math.abs(location.getBlockZ() - mineLoc.getBlockZ()) <= halfDepth &&
+               location.getBlockX() >= mineLoc.getBlockX() &&
+               location.getBlockX() < mineLoc.getBlockX() + side &&
+               location.getBlockZ() >= mineLoc.getBlockZ() &&
+               location.getBlockZ() < mineLoc.getBlockZ() + side &&
                location.getBlockY() >= mineLoc.getBlockY() &&
-               location.getBlockY() <= mineLoc.getBlockY() + height;
+               location.getBlockY() < mineLoc.getBlockY() + height;
     }
 
     private void regenerateMine(MineData mine) {
@@ -339,19 +378,17 @@ public final class Nyris extends JavaPlugin implements Listener {
     private static class MineData {
         private final UUID ownerUUID;
         private final Location location;
-        private final int width;
-        private final int depth;
+        private final int side;
         private final int height;
         private final List<BlockData> originalBlocks;
         private final List<Block> mineBlocks;
         private final long expirationTime;
         
-        public MineData(UUID ownerUUID, Location location, int width, int depth, int height, 
+        public MineData(UUID ownerUUID, Location location, int side, int height, 
                         List<BlockData> originalBlocks, List<Block> mineBlocks, long expirationTime) {
             this.ownerUUID = ownerUUID;
             this.location = location;
-            this.width = width;
-            this.depth = depth;
+            this.side = side;
             this.height = height;
             this.originalBlocks = originalBlocks;
             this.mineBlocks = mineBlocks;
@@ -360,8 +397,7 @@ public final class Nyris extends JavaPlugin implements Listener {
         
         public UUID getOwnerUUID() { return ownerUUID; }
         public Location getLocation() { return location; }
-        public int getWidth() { return width; }
-        public int getDepth() { return depth; }
+        public int getSide() { return side; }
         public int getHeight() { return height; }
         public List<BlockData> getOriginalBlocks() { return originalBlocks; }
         public List<Block> getMineBlocks() { return mineBlocks; }

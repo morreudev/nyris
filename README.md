@@ -9,12 +9,13 @@ O Plugin Nyris permite que jogadores criem minas personalizadas no Minecraft 1.2
 - `/nyris` - Recebe o item especial da mina
 
 ### Sistema de Minas
-- **Dimensões Personalizáveis**: Configure largura x profundidade x altura em blocos
+- **Cubo Perfeito**: Dimensões lado x lado x altura em blocos
 - **Criação Direta**: Clique com botão direito para criar a mina onde está olhando
-- **Posicionamento Preciso**: A mina é criada no primeiro bloco sólido que você está mirando
+- **Posicionamento de Borda**: A mina é criada a partir do ponto de clique (não centralizada)
+- **Spawn de Blocos**: Cria blocos de minério no ar, não substitui blocos existentes
 - **Sistema de Expiração**: Minas têm duração configurável
 - **Efeitos Visuais e Sonoros**: Efeitos especiais na criação, aviso e expiração
-- **Minérios**: Lista configurável de tipos de minérios
+- **Minérios Aleatórios**: Usa minérios da lista configurada
 - **Proteção**: Apenas o dono pode minerar na mina
 - **Regeneração**: Mina se regenera automaticamente após ser esgotada
 
@@ -31,9 +32,8 @@ O Plugin Nyris permite que jogadores criem minas personalizadas no Minecraft 1.2
 ```yaml
 mine:
   dimensions:
-    width: 10      # Largura da mina em blocos
-    depth: 10      # Profundidade da mina em blocos
-    height: 5      # Altura da mina em blocos
+    side: 10      # Lado do cubo (largura x profundidade)
+    height: 5     # Altura do cubo
   
   duration:
     active_time: 3600    # Tempo ativo em segundos (3600 = 1 hora)
@@ -43,6 +43,11 @@ mine:
     - COAL_ORE
     - IRON_ORE
     - DIAMOND_ORE
+    - GOLD_ORE
+    - EMERALD_ORE
+    - LAPIS_ORE
+    - REDSTONE_ORE
+    - COPPER_ORE
     # ... outros minérios
 
 effects:
@@ -73,10 +78,18 @@ effects:
 
 ## Sistema de Dimensões
 
-- **Largura (X)**: Número de blocos no eixo X
-- **Profundidade (Z)**: Número de blocos no eixo Z  
-- **Altura (Y)**: Número de blocos no eixo Y
-- **Centro**: A mina é criada centralizada no ponto de clique
+- **Lado**: Número de blocos para largura e profundidade (cubo perfeito)
+- **Altura**: Número de blocos para altura
+- **Posicionamento de Borda**: A mina é criada a partir do ponto de clique
+- **Formato**: Cubo perfeito com dimensões lado x lado x altura
+
+## Sistema de Criação de Blocos
+
+- **Spawn no Ar**: Cria blocos de minério em posições vazias
+- **Não Substitui**: Não remove blocos existentes
+- **Minérios Aleatórios**: Cada bloco recebe um minério diferente
+- **Cubo Completo**: Preenche todo o volume do cubo configurado
+- **Posicionamento Inteligente**: Você fica na borda da mina, não no centro
 
 ## Sistema de Expiração
 
@@ -91,6 +104,16 @@ effects:
 - **Aviso**: Som de nota musical + partículas de nota
 - **Expiração**: Som de explosão + partículas de explosão
 - **Configuráveis**: Volume, pitch e quantidade de partículas
+
+## Características Especiais
+
+- **Cubo Perfeito**: Sempre forma um quadrado perfeito na base
+- **Posicionamento de Borda**: Você fica na borda da mina, não no centro
+- **Spawn de Blocos**: Cria minérios no ar, não substitui existentes
+- **Minérios Aleatórios**: Usa a lista configurada de minérios
+- **Otimizado**: Sistema eficiente sem lag
+- **Flexível**: Dimensões totalmente configuráveis
+- **Sem Travas**: Você nunca fica preso no meio da mina
 
 ## Permissões
 
