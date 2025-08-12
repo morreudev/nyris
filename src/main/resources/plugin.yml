@@ -1,0 +1,4 @@
+name: Nyris
+version: '1.0-SNAPSHOT'
+main: com.morreu.nyris.Nyris
+api-version: '1.21'
