@@ -8,11 +8,17 @@ website: https://github.com/morreu/nyris
 
 commands:
   nyris:
-    description: Recebe o item especial da mina
-    usage: /nyris
+    description: Recebe o item especial da mina, limpa todas as minas ou remove duplicatas
+    usage: /nyris [limpar|duplicadas|status|teste|forcar]
     permission: nyris.use
 
 permissions:
   nyris.use:
     description: Permite usar o comando /nyris
     default: true
+  nyris.create:
+    description: Permite criar minas
+    default: true
+  nyris.admin:
+    description: Permite usar comandos administrativos
+    default: op

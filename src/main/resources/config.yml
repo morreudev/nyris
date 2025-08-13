@@ -4,30 +4,39 @@ mine:
     height: 5
   
   duration:
-    active_time: 3600
-    warning_time: 300
+    active_time: 40
+    warning_time: 20
   
   ore_types:
     - COAL_ORE
+    - IRON_ORE
+    - GOLD_ORE
+    - DIAMOND_ORE
+    - EMERALD_ORE
+    - REDSTONE_ORE
+    - LAPIS_ORE
+    - COPPER_ORE
+  
+  limits:
+    max_per_player: 1
+    max_global: 100
 
-effects:
-  creation:
-    sound: ENTITY_ENDER_DRAGON_GROWL
-    volume: 1.0
-    pitch: 0.5
-    particles: PORTAL
-    particle_count: 50
+  allowed_worlds: []
   
-  expiration:
-    sound: ENTITY_GENERIC_EXPLODE
-    volume: 0.8
-    pitch: 1.0
-    particles: EXPLOSION_LARGE
-    particle_count: 30
-  
-  warning:
-    sound: BLOCK_NOTE_BLOCK_PLING
-    volume: 0.6
-    pitch: 2.0
-    particles: NOTE
-    particle_count: 20
+
+  auto_regeneration:
+    enabled: true
+    threshold_percentage: 5
+    blocks_per_tick: 5
+
+database:
+  type: "mysql"
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "s14_teste3"
+    username: "u14_rQYGKQBShY"
+    password: "j!2y7=i1cJVGh+mYV3q6!@0o"
+  fallback:
+    enabled: true
+    json_file: "mines.json"
